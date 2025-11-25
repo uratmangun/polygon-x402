@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function Navbar() {
     return (
@@ -39,9 +42,7 @@ export default function Navbar() {
                             <span className="text-xs text-gray-400">Gas Saved</span>
                             <span className="text-sm font-mono text-emerald-400 font-bold">$1,240.50</span>
                         </div>
-                        <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full font-medium transition-all duration-300 border border-white/10 hover:border-cyan-500/50 hover:shadow-[0_0_20px_-5px_var(--primary)]">
-                            Connect Wallet
-                        </button>
+<ConnectButton />
                     </div>
                 </div>
             </div>

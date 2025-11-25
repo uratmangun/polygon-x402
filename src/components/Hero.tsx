@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Hero() {
     return (
         <div className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
@@ -16,8 +18,8 @@ export default function Hero() {
 
                 {/* Headline */}
                 <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-6">
-                    Trade Without <br />
-                    <span className="text-gradient glow-primary">Paying Gas</span>
+                    Peer to Peer <br />
+                    <span className="text-gradient glow-primary">Marketplace</span>
                 </h1>
 
                 <p className="text-xl text-gray-400 max-w-2xl mb-10 leading-relaxed">
@@ -26,12 +28,12 @@ export default function Hero() {
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <button className="px-8 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1">
+                    <Link href="/marketplace" className="px-8 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1">
                         Explore Marketplace
-                    </button>
-                    <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
+                    </Link>
+                    <Link href="/marketplace" className="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
                         Start Selling
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Stats */}

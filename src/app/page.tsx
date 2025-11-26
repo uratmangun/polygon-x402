@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import MarketplaceGrid from '@/components/MarketplaceGrid';
@@ -65,12 +67,12 @@ export default function Home() {
               Join thousands of traders experiencing the future of gasless transactions on Polygon.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-10 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1">
+              <Link
+                href="/marketplace"
+                className="px-10 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1 text-center"
+              >
                 Get Started Now
-              </button>
-              <button className="px-10 py-4 rounded-full bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
-                Learn More
-              </button>
+              </Link>
             </div>
           </div>
         </div>

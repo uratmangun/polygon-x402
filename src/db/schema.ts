@@ -13,5 +13,16 @@ export const products = pgTable('products', {
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const comments = pgTable('comments', {
+    id: serial('id').primaryKey(),
+    productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+    authorAddress: varchar('author_address', { length: 42 }).notNull(), // Ethereum address
+    authorName: varchar('author_name', { length: 100 }),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
+export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;

@@ -32,9 +32,9 @@ export default function Footer() {
                     <div>
                         <h3 className="text-white font-bold mb-4">Marketplace</h3>
                         <ul className="space-y-3">
-                            {['Explore', 'Top Collections', 'New Drops', 'Activity'].map((link) => (
+                            {['Explore'].map((link) => (
                                 <li key={link}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                                    <a href="/marketplace" className="text-gray-400 hover:text-white transition-colors">
                                         {link}
                                     </a>
                                 </li>
@@ -42,33 +42,8 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Resources */}
-                    <div>
-                        <h3 className="text-white font-bold mb-4">Resources</h3>
-                        <ul className="space-y-3">
-                            {['Documentation', 'API', 'Learn', 'Support'].map((link) => (
-                                <li key={link}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                                        {link}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
 
-                    {/* Company */}
-                    <div>
-                        <h3 className="text-white font-bold mb-4">Company</h3>
-                        <ul className="space-y-3">
-                            {['About', 'Blog', 'Careers', 'Contact'].map((link) => (
-                                <li key={link}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                                        {link}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                 
                 </div>
 
                 {/* Bottom */}

@@ -4,73 +4,86 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { useState } from 'react';
-
-const MOCK_PRODUCTS = [
-    {
-        id: 1,
-        title: 'Sony WH-1000XM5 Headphones',
-        price: '349',
-        seller: 'TechStore',
-        sellerAddress: '0x1234...5678',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop',
-        stock: 12,
-        description: 'Premium noise-canceling wireless headphones',
-    },
-    {
-        id: 2,
-        title: 'Apple MacBook Pro 14"',
-        price: '1,999',
-        seller: 'AppleReseller',
-        sellerAddress: '0xabcd...efgh',
-        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&h=800&fit=crop',
-        stock: 5,
-        description: 'M3 Pro chip, 18GB RAM, 512GB SSD',
-    },
-    {
-        id: 3,
-        title: 'Nike Air Max 90',
-        price: '129',
-        seller: 'SneakerHub',
-        sellerAddress: '0x9876...4321',
-        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&h=800&fit=crop',
-        stock: 28,
-        description: 'Classic sneakers, multiple sizes available',
-    },
-    {
-        id: 4,
-        title: 'Canon EOS R6 Camera',
-        price: '2,499',
-        seller: 'PhotoPro',
-        sellerAddress: '0xfedc...ba98',
-        image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&h=800&fit=crop',
-        stock: 3,
-        description: 'Full-frame mirrorless camera body',
-    },
-    {
-        id: 5,
-        title: 'Herman Miller Aeron Chair',
-        price: '1,395',
-        seller: 'OfficeFurniture',
-        sellerAddress: '0x5555...6666',
-        image: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800&h=800&fit=crop',
-        stock: 8,
-        description: 'Ergonomic office chair, size B',
-    },
-    {
-        id: 6,
-        title: 'iPad Pro 12.9" M2',
-        price: '1,099',
-        seller: 'GadgetWorld',
-        sellerAddress: '0x7777...8888',
-        image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=800&h=800&fit=crop',
-        stock: 15,
-        description: '256GB, Wi-Fi, Space Gray',
-    },
-];
+import { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
+import type { Product } from '@/db/schema';
 
 export default function MarketplacePage() {
     const [showSellModal, setShowSellModal] = useState(false);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { address, isConnected } = useAccount();
+
+    // Form state
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        price: '',
+        stock: '1',
+        imageUrl: '',
+    });
+
+    // Fetch products from API
+    useEffect(() => {
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch products:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchProducts();
+    }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!isConnected || !address) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const response = await fetch('/api/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    sellerAddress: address,
+                }),
+            });
+
+            if (response.ok) {
+                const newProduct = await response.json();
+                setProducts(prev => [newProduct, ...prev]);
+                setShowSellModal(false);
+                setFormData({ title: '', description: '', price: '', stock: '1', imageUrl: '' });
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Failed to list item');
+            }
+        } catch (error) {
+            console.error('Error listing item:', error);
+            alert('Failed to list item');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <main className="min-h-screen bg-background">
@@ -108,17 +121,28 @@ export default function MarketplacePage() {
                     </div>
 
                     {/* Products Grid */}
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+                        </div>
+                    ) : products.length === 0 ? (
+                        <div className="text-center py-20">
+                            <p className="text-gray-400 text-lg">No products listed yet. Be the first to sell!</p>
+                        </div>
+                    ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {MOCK_PRODUCTS.map((product) => (
-                            <div key={product.id} className="glass-card rounded-2xl overflow-hidden group">
+                        {products.map((product) => (
+                            <Link href={`/marketplace/${product.id}`} key={product.id} className="glass-card rounded-2xl overflow-hidden group cursor-pointer">
                                 {/* Image */}
                                 <div className="relative h-64 overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
-                                    <Image
-                                        src={product.image}
-                                        alt={product.title}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                    />
+                                    {product.imageUrl && (
+                                        <Image
+                                            src={product.imageUrl}
+                                            alt={product.title}
+                                            fill
+                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                    )}
                                     <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                         <span className="text-xs font-bold text-white">Gas Free</span>
@@ -143,11 +167,11 @@ export default function MarketplacePage() {
                                         <h3 className="text-lg font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">
                                             {product.title}
                                         </h3>
-                                        <p className="text-sm text-gray-500 mb-2">{product.description}</p>
+                                        {product.description && <p className="text-sm text-gray-500 mb-2">{product.description}</p>}
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm text-gray-400">Sold by</span>
-                                            <span className="text-sm text-cyan-400 font-medium">{product.seller}</span>
-                                            <span className="text-xs text-gray-500 font-mono">({product.sellerAddress})</span>
+                                            {product.sellerName && <span className="text-sm text-cyan-400 font-medium">{product.sellerName}</span>}
+                                            <span className="text-xs text-gray-500 font-mono">({product.sellerAddress.slice(0, 6)}...{product.sellerAddress.slice(-4)})</span>
                                         </div>
                                     </div>
 
@@ -156,7 +180,7 @@ export default function MarketplacePage() {
                                         <div className="flex flex-col">
                                             <span className="text-xs text-gray-400 mb-1">Price</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xl font-bold text-white">{product.price}</span>
+                                                <span className="text-xl font-bold text-white">{parseFloat(product.price).toLocaleString()}</span>
                                                 <span className="text-sm text-gray-400">USDC</span>
                                             </div>
                                         </div>
@@ -168,9 +192,10 @@ export default function MarketplacePage() {
                                         </button>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -193,18 +218,30 @@ export default function MarketplacePage() {
 
                         <h2 className="text-2xl font-bold text-white mb-6">List an Item for Sale</h2>
                         
-                        <form className="space-y-5">
+                        {!isConnected ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-400 mb-4">Please connect your wallet to list items for sale.</p>
+                            </div>
+                        ) : (
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Item Name</label>
                                 <input
                                     type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleInputChange}
                                     placeholder="e.g., iPhone 15 Pro"
+                                    required
                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
                                 <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleInputChange}
                                     placeholder="Describe your item..."
                                     rows={3}
                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors resize-none"
@@ -215,7 +252,13 @@ export default function MarketplacePage() {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Price (USDC)</label>
                                     <input
                                         type="number"
+                                        name="price"
+                                        value={formData.price}
+                                        onChange={handleInputChange}
                                         placeholder="0.00"
+                                        step="0.01"
+                                        min="0.01"
+                                        required
                                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                                     />
                                 </div>
@@ -223,8 +266,12 @@ export default function MarketplacePage() {
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Stock Quantity</label>
                                     <input
                                         type="number"
+                                        name="stock"
+                                        value={formData.stock}
+                                        onChange={handleInputChange}
                                         placeholder="1"
                                         min="1"
+                                        required
                                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                                     />
                                 </div>
@@ -233,17 +280,25 @@ export default function MarketplacePage() {
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
                                 <input
                                     type="url"
+                                    name="imageUrl"
+                                    value={formData.imageUrl}
+                                    onChange={handleInputChange}
                                     placeholder="https://..."
                                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
                                 />
                             </div>
+                            <div className="text-xs text-gray-500 mb-2">
+                                Listing as: <span className="text-cyan-400 font-mono">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                            </div>
                             <button
                                 type="submit"
-                                className="w-full px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_#10b981] transition-all duration-300"
+                                disabled={isSubmitting}
+                                className="w-full px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_#10b981] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                List Item for Sale
+                                {isSubmitting ? 'Listing...' : 'List Item for Sale'}
                             </button>
                         </form>
+                        )}
                     </div>
                 </div>
             )}

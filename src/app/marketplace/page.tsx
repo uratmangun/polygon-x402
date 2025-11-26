@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
+import { useUsdcPayment } from '@/hooks/useUsdcPayment';
 import type { Product } from '@/db/schema';
 
 export default function MarketplacePage() {
@@ -13,7 +14,7 @@ export default function MarketplacePage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { address, isConnected } = useAccount();
+    const { address, isConnected } = useConnection();
 
     // Form state
     const [formData, setFormData] = useState({
@@ -23,6 +24,62 @@ export default function MarketplacePage() {
         stock: '1',
         imageUrl: '',
     });
+
+    // Buy state
+    const [buyingProductId, setBuyingProductId] = useState<number | null>(null);
+    const { sendPayment, isPending: isPaymentPending, error: paymentError } = useUsdcPayment();
+
+    // Handle buy product
+    const handleBuy = async (e: React.MouseEvent, product: Product) => {
+        e.preventDefault(); // Prevent navigation to product detail
+        e.stopPropagation();
+        
+        if (!isConnected || !address) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
+        if (product.stock === 0) {
+            alert('This product is sold out');
+            return;
+        }
+
+        setBuyingProductId(product.id);
+
+        try {
+            // Send USDC payment to seller
+            const result = await sendPayment(product.sellerAddress, product.price);
+
+            if (result.success) {
+                // Decrease stock via purchase API
+                const response = await fetch(`/api/products/${product.id}/purchase`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        txHash: result.txHash,
+                        buyerAddress: address,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Update local state
+                    setProducts(prev => prev.map(p => 
+                        p.id === product.id ? data.product : p
+                    ));
+                    alert(`Purchase successful! Transaction: ${result.txHash || 'Completed'}`);
+                } else {
+                    console.error('Failed to update stock');
+                    alert('Payment successful but failed to update stock. Please contact support.');
+                }
+            }
+        } catch (error) {
+            console.error('Purchase error:', error);
+            alert(paymentError || 'Failed to complete purchase');
+        } finally {
+            setBuyingProductId(null);
+        }
+    };
 
     // Fetch products from API
     useEffect(() => {
@@ -184,12 +241,21 @@ export default function MarketplacePage() {
                                                 <span className="text-sm text-gray-400">USDC</span>
                                             </div>
                                         </div>
-                                        <button 
-                                            className="px-6 py-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm hover:shadow-[0_0_20px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                            disabled={product.stock === 0}
-                                        >
-                                            {product.stock === 0 ? 'Sold Out' : 'Buy Now'}
-                                        </button>
+                                        {address?.toLowerCase() !== product.sellerAddress.toLowerCase() && (
+                                            <button 
+                                                onClick={(e) => handleBuy(e, product)}
+                                                className="px-6 py-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm hover:shadow-[0_0_20px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                                disabled={product.stock === 0 || buyingProductId === product.id || !isConnected}
+                                            >
+                                                {buyingProductId === product.id 
+                                                    ? 'Processing...' 
+                                                    : product.stock === 0 
+                                                        ? 'Sold Out' 
+                                                        : !isConnected 
+                                                            ? 'Connect Wallet' 
+                                                            : 'Buy Now'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </Link>

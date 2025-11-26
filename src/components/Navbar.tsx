@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract } from 'wagmi';
+import { useConnection, useReadContract } from 'wagmi';
 import { polygon, polygonAmoy } from 'wagmi/chains';
 import { formatUnits } from 'viem';
 
@@ -24,7 +24,7 @@ const erc20BalanceOfAbi = [
 ] as const;
 
 export default function Navbar() {
-    const { address, isConnected, chainId } = useAccount();
+    const { address, chainId, isConnected } = useConnection();
     
     // Get USDC contract address for current chain
     const usdcAddress = chainId ? USDC_ADDRESSES[chainId as keyof typeof USDC_ADDRESSES] : undefined;

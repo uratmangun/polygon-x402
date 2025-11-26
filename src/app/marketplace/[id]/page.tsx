@@ -6,7 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
+import { useUsdcPayment } from '@/hooks/useUsdcPayment';
 import type { Product, Comment } from '@/db/schema';
 
 export default function ProductDetailPage() {
@@ -21,7 +22,7 @@ export default function ProductDetailPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [isPostingComment, setIsPostingComment] = useState(false);
-    const { address, isConnected } = useAccount();
+    const { address, isConnected } = useConnection();
 
     // Edit form state
     const [editForm, setEditForm] = useState({
@@ -33,6 +34,59 @@ export default function ProductDetailPage() {
     });
 
     const isOwner = product && address && product.sellerAddress.toLowerCase() === address.toLowerCase();
+
+    // Buy state
+    const [isBuying, setIsBuying] = useState(false);
+    const { sendPayment, error: paymentError } = useUsdcPayment();
+
+    // Handle buy product
+    const handleBuy = async () => {
+        if (!product) return;
+        
+        if (!isConnected || !address) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
+        if (product.stock === 0) {
+            alert('This product is sold out');
+            return;
+        }
+
+        setIsBuying(true);
+
+        try {
+            // Send USDC payment to seller
+            const result = await sendPayment(product.sellerAddress, product.price);
+
+            if (result.success) {
+                // Decrease stock via purchase API
+                const response = await fetch(`/api/products/${productId}/purchase`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        txHash: result.txHash,
+                        buyerAddress: address,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setProduct(data.product);
+                    setEditForm(prev => ({ ...prev, stock: data.product.stock.toString() }));
+                    alert(`Purchase successful! Transaction: ${result.txHash || 'Completed'}`);
+                } else {
+                    console.error('Failed to update stock');
+                    alert('Payment successful but failed to update stock. Please contact support.');
+                }
+            }
+        } catch (error) {
+            console.error('Purchase error:', error);
+            alert(paymentError || 'Failed to complete purchase');
+        } finally {
+            setIsBuying(false);
+        }
+    };
 
     // Fetch product and comments
     useEffect(() => {
@@ -346,12 +400,21 @@ export default function ProductDetailPage() {
                                     )}
 
                                     <div className="flex gap-3">
-                                        <button 
-                                            className="flex-1 px-8 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                            disabled={product.stock === 0}
-                                        >
-                                            {product.stock === 0 ? 'Sold Out' : 'Buy Now'}
-                                        </button>
+                                        {!isOwner && (
+                                            <button 
+                                                onClick={handleBuy}
+                                                className="flex-1 px-8 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                                disabled={product.stock === 0 || isBuying || !isConnected}
+                                            >
+                                                {isBuying 
+                                                    ? 'Processing...' 
+                                                    : product.stock === 0 
+                                                        ? 'Sold Out' 
+                                                        : !isConnected 
+                                                            ? 'Connect Wallet' 
+                                                            : 'Buy Now'}
+                                            </button>
+                                        )}
                                         
                                         {isOwner && (
                                             <>

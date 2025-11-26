@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+  turbopack: {
+    resolveAlias: {
+      'pino-pretty': 'pino-pretty',
+    },
+  },
 };
 
 export default nextConfig;

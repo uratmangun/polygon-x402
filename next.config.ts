@@ -7,9 +7,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: '**',
       },
     ],
+  },
+  serverExternalPackages: ['pino', 'pino-pretty', 'thread-stream'],
+  turbopack: {
+    resolveAlias: {
+      'pino-pretty': 'pino-pretty',
+    },
   },
 };
 

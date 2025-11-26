@@ -1,6 +1,8 @@
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface ProductCardProps {
+    id: number;
     title: string;
     price: string;
     image: string;
@@ -8,17 +10,19 @@ interface ProductCardProps {
     gasFreeBadge?: boolean;
 }
 
-export default function ProductCard({ title, price, image, seller, gasFreeBadge = true }: ProductCardProps) {
+export default function ProductCard({ id, title, price, image, seller, gasFreeBadge = true }: ProductCardProps) {
     return (
-        <div className="glass-card rounded-2xl overflow-hidden group cursor-pointer">
+        <Link href={`/marketplace/${id}`} className="glass-card rounded-2xl overflow-hidden group cursor-pointer block">
             {/* Image */}
             <div className="relative h-64 overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
-                <Image
-                    src={image}
-                    alt={title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
+                {image && (
+                    <Image
+                        src={image}
+                        alt={title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                )}
                 {gasFreeBadge && (
                     <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -47,11 +51,11 @@ export default function ProductCard({ title, price, image, seller, gasFreeBadge 
                             <span className="text-sm text-gray-400">USDC</span>
                         </div>
                     </div>
-                    <button className="px-6 py-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm hover:shadow-[0_0_20px_-5px_var(--primary)] transition-all duration-300 transform hover:-translate-y-0.5">
-                        Buy Now
-                    </button>
+                    <span className="px-6 py-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm group-hover:shadow-[0_0_20px_-5px_var(--primary)] transition-all duration-300 transform group-hover:-translate-y-0.5">
+                        View Details
+                    </span>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }
